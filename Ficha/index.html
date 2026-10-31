@@ -1,0 +1,1581 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nemesis</title>
+  <meta name="theme-color" content="#130b0f">
+  <link rel="manifest" href="manifest.webmanifest?v=20260811-1">
+  <link rel="apple-touch-icon" href="menu-background-red.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260811-1">
+  <link rel="stylesheet" href="tabletop.css?v=20260811-1">
+  <style>
+    #boot-warning {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.72);
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      color: #eaf2ff;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    body:not(.nemesis-ready) #boot-warning {
+      animation: boot-warning-reveal 0s linear 1.2s forwards;
+    }
+
+    body.nemesis-ready #boot-warning {
+      display: none;
+    }
+
+    @keyframes boot-warning-reveal {
+      to {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+      }
+    }
+
+    #boot-warning .boot-card {
+      width: min(560px, 100%);
+      border: 1px solid rgba(150, 180, 220, 0.35);
+      border-radius: 14px;
+      background: rgba(18, 26, 40, 0.95);
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5);
+      padding: 16px 16px 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    #boot-warning h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: 0.02em;
+    }
+
+    #boot-warning p,
+    #boot-warning li {
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.35;
+      color: #cfe0ff;
+    }
+
+    #boot-warning ul {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 6px;
+    }
+
+    #boot-warning code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.9em;
+      color: #ffffff;
+    }
+
+    #boot-warning .boot-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    #boot-warning button {
+      border: 1px solid rgba(150, 180, 220, 0.35);
+      background: rgba(24, 34, 52, 0.95);
+      color: #eaf2ff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body data-view="create">
+  <div class="page-glow"></div>
+  <div id="ui-toast-stack" class="ui-toast-stack" aria-live="polite" aria-atomic="false"></div>
+
+  <div id="boot-warning" aria-live="polite" aria-hidden="true">
+    <div class="boot-card" role="dialog" aria-modal="true" aria-label="Aviso de carregamento">
+      <h2>Nemesis n&atilde;o carregou no celular</h2>
+      <p id="boot-warning-text">O registro precisa do CSS e do JavaScript para funcionar.</p>
+      <ul>
+        <li>Abra em um navegador (Chrome/Safari), n&atilde;o em preview de WhatsApp/Drive.</li>
+        <li>Mantenha estes arquivos na mesma pasta: <code>index.html</code>, <code>styles.css?v=20260811-1</code>, <code>tabletop.css?v=20260811-1</code>, <code>script.js?v=20260811-1</code>, <code>tabletop.js?v=20260811-1</code>, <code>firebase-config.js?v=20260811-1</code>, <code>menu-background.svg</code>, <code>menu-background.jpg</code>, <code>menu-background-red.png</code>, os &iacute;cones <code>icon-backpack.png</code>, <code>icon-dagger.png</code>, <code>icon-eye.png</code>, <code>icon-d20.png</code> e as molduras <code>die-frame-d20.png</code>, <code>die-frame-d4.png</code>, <code>die-frame-d6.png</code>, <code>die-frame-d8.png</code>, <code>die-frame-d10.png</code>, <code>die-frame-d12.png</code>.</li>
+        <li>Se estiver abrindo por link, confirme que o servidor enviou <code>styles.css?v=20260811-1</code>, <code>tabletop.css?v=20260811-1</code>, <code>script.js?v=20260811-1</code> e <code>tabletop.js?v=20260811-1</code> junto do <code>index.html</code>.</li>
+      </ul>
+      <p id="boot-warning-detail"></p>
+      <div class="boot-actions">
+        <button type="button" id="boot-warning-close">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <button type="button" id="open-menu" class="floating-menu-btn">Voltar ao menu</button>
+
+  <div id="mode-menu" class="mode-menu open" aria-hidden="false">
+    <div class="mode-card">
+      <aside class="menu-sidebar">
+        <h2 id="menu-brand" class="menu-brand" data-glitch-text="Nemesis" aria-label="Nemesis">Nemesis</h2>
+        <div class="mode-actions menu-nav">
+          <button type="button" id="menu-create" class="mode-btn" data-status-text="inicializando...">Criar personagem</button>
+          <button type="button" id="menu-access" class="mode-btn" data-status-text="acessando...">Personagens Criados</button>
+          <button type="button" id="menu-rooms" class="mode-btn" data-status-text="sincronizando...">Sess&atilde;o Online</button>
+          <button type="button" id="menu-tabletop" class="mode-btn" data-status-text="cartografando...">Mesa T&aacute;tica</button>
+          <button type="button" id="menu-master" class="mode-btn" data-status-text="credencial...">ACESSO RESTRITO</button>
+          <button type="button" id="menu-master-inventory" class="mode-btn hidden" data-status-text="catalogando...">Invent&aacute;rio do Mestre</button>
+          <button type="button" id="menu-master-npc-create" class="mode-btn hidden" data-status-text="materializando...">Criar NPC</button>
+          <button type="button" id="menu-master-npc-list" class="mode-btn hidden" data-status-text="catalogando...">NPCs Criados</button>
+        </div>
+        <div class="menu-utility-actions">
+          <button type="button" id="install-app" class="secondary hidden">Instalar App</button>
+          <button type="button" id="export-backup" class="secondary menu-utility-btn" data-status-text="exportando...">EXPORTAR DADOS</button>
+          <button type="button" id="import-backup" class="secondary menu-utility-btn" data-status-text="recuperando...">RECUPERAR ARQUIVOS</button>
+          <button type="button" id="layout-mode-toggle" class="layout-mode-toggle" aria-label="Alternar modo de visualiza&ccedil;&atilde;o"></button>
+          <input id="import-backup-file" type="file" accept="application/json,.json" class="hidden-file">
+        </div>
+      </aside>
+
+      <section class="menu-content">
+        <div id="menu-home-view" class="menu-view"></div>
+
+        <div id="menu-access-view" class="menu-view hidden">
+          <h2>Personagens Criados</h2>
+          <p>Escolha um registro salvo para abrir.</p>
+          <label class="search-label mode-search-label">
+            Buscar personagem
+            <input id="menu-character-search" type="search" placeholder="Digite identifica&ccedil;&atilde;o, classe, trilha ou origem...">
+          </label>
+          <div id="menu-characters-list" class="menu-characters-list"></div>
+        </div>
+
+        <div id="menu-rooms-view" class="menu-view hidden">
+          <div class="rooms-header mission-header">
+            <div>
+              <h2>Sess&atilde;o Online</h2>
+              <p>Conecte a ficha por c&oacute;digo e deixe o restante com o auto-save. O mestre acompanha tudo em tempo real na mesma &aacute;rea.</p>
+            </div>
+            <span id="rooms-firebase-status" class="rooms-status-pill">Firebase n&atilde;o configurado</span>
+          </div>
+
+          <article class="missions-player-card">
+            <div class="missions-create-copy">
+              <h3>Conectar Ficha</h3>
+              <p>Jogadores: apenas informe o c&oacute;digo da sess&atilde;o e conecte a ficha. Cria&ccedil;&atilde;o e gerenciamento da sess&atilde;o ficam com o mestre.</p>
+            </div>
+            <div class="missions-player-grid">
+              <label class="missions-create-form-full">
+                C&oacute;digo da sess&atilde;o
+                <input id="room-code" type="text" maxlength="12" autocomplete="off" placeholder="Ex.: AB12CD">
+              </label>
+              <div class="inline-actions">
+                <button type="button" id="room-join" class="primary">Conectar ficha</button>
+                <button type="button" id="room-leave" class="secondary room-master-only hidden">Desconectar</button>
+                <button type="button" id="room-copy-code" class="secondary room-master-only hidden">Copiar c&oacute;digo</button>
+                <button type="button" id="room-send-character" class="secondary room-master-only hidden">Atualizar ficha</button>
+              </div>
+            </div>
+            <div id="rooms-current-character" class="mission-player-character room-master-only hidden"></div>
+            <div class="mission-player-summary">
+              <div>
+                <h4 id="room-current-title">Nenhuma sess&atilde;o conectada</h4>
+                <p id="room-current-meta" class="hint">Entre pelo c&oacute;digo da sess&atilde;o para sincronizar sua ficha automaticamente.</p>
+              </div>
+              <p id="room-lobby-status" class="missions-panel-source"></p>
+            </div>
+            <div id="room-participants" class="mission-player-participants room-master-only hidden"></div>
+          </article>
+
+          <article id="missions-master-gate" class="missions-master-gate hidden">
+            <h3>Painel do mestre</h3>
+            <p>Desbloqueie o acesso restrito para criar sess&otilde;es e visualizar todas as fichas conectadas aqui mesmo.</p>
+            <button type="button" id="missions-open-master" class="primary">Desbloquear</button>
+          </article>
+
+          <section id="missions-shell" class="missions-shell hidden">
+            <article class="missions-create-card">
+              <div class="missions-create-copy">
+                <h3>Criar Sess&atilde;o</h3>
+                <p>Crie a sess&atilde;o, compartilhe o c&oacute;digo com os jogadores e acompanhe todas as fichas conectadas sem sair desta tela.</p>
+              </div>
+              <button type="button" id="mission-create-start" class="primary">Criar sess&atilde;o</button>
+              <div id="mission-create-form" class="missions-create-form hidden">
+                <label>
+                  C&oacute;digo da sess&atilde;o
+                  <input id="mission-code" type="text" maxlength="12" autocomplete="off" placeholder="Ex.: AB12CD">
+                </label>
+                <label>
+                  T&iacute;tulo da sess&atilde;o
+                  <input id="mission-title" type="text" maxlength="80" placeholder="Ex.: Hospital Santa Dhalia">
+                </label>
+                <label class="missions-create-form-full">
+                  Introdu&ccedil;&atilde;o da sess&atilde;o
+                  <textarea id="mission-intro" rows="5" placeholder="Descreva o clima, o gancho inicial e o foco dessa sess&atilde;o..."></textarea>
+                </label>
+                <div class="inline-actions">
+                  <button type="button" id="mission-create-confirm" class="primary">Criar sess&atilde;o</button>
+                  <button type="button" id="mission-create-cancel" class="secondary">Cancelar</button>
+                </div>
+              </div>
+            </article>
+
+            <div class="missions-dashboard">
+              <section class="missions-list-panel">
+                <div class="section-toolbar">
+                  <div>
+                    <h3>Sess&otilde;es Criadas</h3>
+                    <p class="hint">Cada sess&atilde;o mostra o c&oacute;digo, o estado e quantas fichas est&atilde;o conectadas.</p>
+                  </div>
+                </div>
+                <div id="missions-list" class="missions-list"></div>
+              </section>
+
+              <section id="mission-panel" class="missions-panel hidden">
+                <div class="missions-panel-header">
+                  <div>
+                    <h3 id="mission-panel-title">Nenhuma sess&atilde;o selecionada</h3>
+                    <p id="mission-panel-intro" class="missions-panel-intro">Escolha uma sess&atilde;o criada para abrir o painel do mestre.</p>
+                    <p id="mission-panel-meta" class="hint">As fichas conectadas dos jogadores aparecer&atilde;o aqui.</p>
+                  </div>
+                  <div class="inline-actions">
+                    <button type="button" id="mission-copy-code" class="secondary">Copiar c&oacute;digo</button>
+                    <button type="button" id="mission-close-panel" class="secondary">Fechar painel</button>
+                  </div>
+                </div>
+                <p id="mission-panel-source" class="missions-panel-source"></p>
+                <section id="mission-assignment-panel" class="mission-assignment-panel">
+                  <div class="mission-assignment-head">
+                    <div>
+                      <h4>Adicionar fichas &agrave; sess&atilde;o</h4>
+                      <p id="mission-assignment-meta" class="hint">O mestre pode puxar uma ficha compartilhada para esta sess&atilde;o sem pedir o c&oacute;digo ao jogador.</p>
+                    </div>
+                  </div>
+                  <div id="mission-available-shares" class="mission-available-shares"></div>
+                </section>
+                <div id="mission-roll-feed" class="mission-roll-feed"></div>
+                <div id="mission-sheet-grid" class="mission-sheet-grid"></div>
+              </section>
+            </div>
+          </section>
+        </div>
+        <div id="menu-tabletop-view" class="menu-view hidden" data-tabletop-mode="player">
+          <div class="tabletop-header">
+            <div>
+              <h2>Mesa T&aacute;tica</h2>
+              <p>Monte cenas com mapas, tokens e notas r&aacute;pidas para complementar as fichas, as miss&otilde;es e o acompanhamento do mestre.</p>
+            </div>
+            <div class="inline-actions tabletop-header-actions tabletop-master-only">
+              <button type="button" id="tabletop-export" class="secondary">Exportar mesa</button>
+              <button type="button" id="tabletop-import" class="secondary">Importar mesa</button>
+              <input id="tabletop-import-file" type="file" accept="application/json,.json" class="hidden-file">
+            </div>
+          </div>
+
+          <div class="tabletop-shell">
+            <aside class="tabletop-sidebar">
+              <section class="tabletop-card tabletop-scenes-card">
+                <div class="tabletop-card-header">
+                  <div>
+                    <h3>Cenas</h3>
+                    <p>Cada mapa pode representar uma fase, um combate ou uma investiga&ccedil;&atilde;o. Clique na cena para abrir ou recolher a configura&ccedil;&atilde;o.</p>
+                  </div>
+                  <button type="button" id="tabletop-scene-add" class="primary tabletop-master-only">Nova cena</button>
+                </div>
+                <div id="tabletop-scene-list" class="tabletop-scene-list"></div>
+                <section class="tabletop-inline-card tabletop-config-card tabletop-master-only hidden">
+                  <div class="tabletop-card-header">
+                    <div>
+                      <h3>Configura&ccedil;&atilde;o da Cena</h3>
+                      <p>Defina mapa, grade, zoom e as anota&ccedil;&otilde;es de apoio da mesa sem ocupar a &aacute;rea principal do mapa.</p>
+                    </div>
+                  </div>
+                  <label>
+                    Nome da cena
+                    <input id="tabletop-scene-name" type="text" maxlength="70" placeholder="Ex.: Corredor do hospital">
+                  </label>
+                  <div class="tabletop-map-actions">
+                    <button type="button" id="tabletop-map-pick" class="secondary">Enviar mapa</button>
+                    <button type="button" id="tabletop-map-clear" class="secondary">Limpar mapa</button>
+                    <button type="button" id="tabletop-center-view" class="secondary">Centralizar mesa</button>
+                    <input id="tabletop-map-file" type="file" accept="image/*" class="hidden-file">
+                  </div>
+                  <label class="tabletop-toggle">
+                    <input id="tabletop-scene-visible" type="checkbox" checked>
+                    Dispon&iacute;vel para jogadores
+                  </label>
+                  <p class="hint">Desative para deixar este mapa vis&iacute;vel apenas no modo mestre.</p>
+                  <label>
+                    Tamanho da grade
+                    <input id="tabletop-grid-size" type="range" min="32" max="128" step="4" value="64">
+                  </label>
+                  <p id="tabletop-grid-size-output" class="hint">64 px por c&eacute;lula</p>
+                  <label>
+                    Zoom da mesa
+                    <input id="tabletop-zoom" type="range" min="50" max="200" step="5" value="100">
+                  </label>
+                  <p id="tabletop-zoom-output" class="hint">100%</p>
+                  <label>
+                    Notas da cena
+                    <textarea id="tabletop-scene-notes" rows="4" placeholder="Objetivos, clima, gatilhos, pistas e detalhes visuais da cena..."></textarea>
+                  </label>
+                </section>
+              </section>
+
+              <section class="tabletop-card tabletop-tokens-card tabletop-master-only">
+                <div class="tabletop-card-header">
+                  <div>
+                    <h3>Tokens</h3>
+                    <p>Puxe fichas do app, traga NPCs do mestre ou envie tokens de personagens, NPCs e jogadores.</p>
+                  </div>
+                  <div class="inline-actions">
+                    <button type="button" id="tabletop-token-upload" class="secondary">Enviar token</button>
+                    <button type="button" id="tabletop-token-add" class="primary">Novo token</button>
+                  </div>
+                </div>
+                <input id="tabletop-token-upload-file" type="file" accept="image/*" class="hidden-file" multiple>
+                <div class="tabletop-link-picker">
+                  <label class="tabletop-link-picker-field">
+                    Adicionar manualmente
+                    <select id="tabletop-token-source-select">
+                      <option value="">Escolha uma ficha, NPC ou participante</option>
+                    </select>
+                  </label>
+                  <button type="button" id="tabletop-token-source-add" class="secondary">Adicionar escolhido</button>
+                </div>
+                <div class="tabletop-import-actions inline-actions">
+                  <button type="button" id="tabletop-import-characters" class="secondary">Importar fichas</button>
+                  <button type="button" id="tabletop-import-mission" class="secondary">Importar miss&atilde;o</button>
+                  <button type="button" id="tabletop-import-npcs" class="secondary">Importar NPCs</button>
+                </div>
+                <section id="tabletop-token-selection" class="tabletop-token-selection hidden">
+                  <div class="tabletop-token-selection-head">
+                    <strong id="tabletop-token-selection-title">Selecionar tokens</strong>
+                    <p id="tabletop-token-selection-meta" class="hint">Marque os tokens que devem entrar na cena e confirme.</p>
+                  </div>
+                  <div class="tabletop-token-selection-actions inline-actions">
+                    <button type="button" id="tabletop-token-selection-all" class="secondary">Selecionar todos</button>
+                    <button type="button" id="tabletop-token-selection-clear" class="secondary">Limpar</button>
+                    <button type="button" id="tabletop-token-selection-confirm" class="primary">Confirmar selecionados</button>
+                    <button type="button" id="tabletop-token-selection-cancel" class="secondary">Cancelar</button>
+                  </div>
+                  <div id="tabletop-token-selection-list" class="tabletop-token-selection-list"></div>
+                </section>
+                <section id="tabletop-token-editor" class="tabletop-token-editor hidden">
+                  <div class="tabletop-token-editor-head">
+                    <strong id="tabletop-token-editor-title">Token selecionado</strong>
+                    <p id="tabletop-token-editor-meta" class="hint">Ajuste apar&ecirc;ncia, marcador r&aacute;pido e posi&ccedil;&atilde;o da pe&ccedil;a.</p>
+                  </div>
+                  <label>
+                    V&iacute;nculo do token
+                    <select id="tabletop-token-link">
+                      <option value="">Token personalizado</option>
+                    </select>
+                  </label>
+                  <div class="tabletop-token-editor-grid">
+                    <label>
+                      Categoria visual
+                      <select id="tabletop-token-role">
+                        <option value="player">Jogador</option>
+                        <option value="npc">NPC</option>
+                        <option value="enemy">Inimigo</option>
+                      </select>
+                    </label>
+                    <label>
+                      Exibi&ccedil;&atilde;o da imagem
+                      <select id="tabletop-token-image-fit">
+                        <option value="cover">Preencher token</option>
+                        <option value="contain">Mostrar imagem inteira</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    Nome do token
+                    <input id="tabletop-token-name" type="text" maxlength="50" placeholder="Ex.: Gal">
+                  </label>
+                  <div class="tabletop-token-editor-grid">
+                    <label>
+                      Cor
+                      <input id="tabletop-token-color" type="color" value="#c5a36a">
+                    </label>
+                    <label>
+                      Marcador
+                      <input id="tabletop-token-hp" type="text" maxlength="18" placeholder="PV 12">
+                    </label>
+                  </div>
+                  <div class="tabletop-token-editor-block">
+                    <span>Condi&ccedil;&otilde;es do token</span>
+                    <div id="tabletop-token-conditions" class="tabletop-condition-picker"></div>
+                  </div>
+                  <label>
+                    Tamanho do token
+                    <input id="tabletop-token-size" type="range" min="40" max="160" step="4" value="64">
+                  </label>
+                  <div class="tabletop-token-editor-grid">
+                    <label>
+                      X
+                      <input id="tabletop-token-x" type="number" min="0" max="1600" step="1">
+                    </label>
+                    <label>
+                      Y
+                      <input id="tabletop-token-y" type="number" min="0" max="1000" step="1">
+                    </label>
+                  </div>
+                  <div class="tabletop-token-editor-actions inline-actions">
+                    <button type="button" id="tabletop-token-image-pick" class="secondary">Imagem do token</button>
+                    <button type="button" id="tabletop-token-image-clear" class="secondary">Remover imagem</button>
+                    <button type="button" id="tabletop-token-duplicate" class="secondary">Duplicar</button>
+                    <button type="button" id="tabletop-token-delete" class="menu-delete-btn">Excluir</button>
+                    <input id="tabletop-token-image-file" type="file" accept="image/*" class="hidden-file">
+                  </div>
+                </section>
+                <div id="tabletop-token-list" class="tabletop-token-list"></div>
+              </section>
+
+              <section class="tabletop-card tabletop-combat-card tabletop-master-only">
+                <div class="tabletop-card-header">
+                  <div>
+                    <h3>Combate</h3>
+                    <p>Controle iniciativa, rodada atual e destaque quem est&aacute; com a vez.</p>
+                  </div>
+                  <div class="inline-actions">
+                    <button type="button" id="tabletop-init-prev" class="secondary">Turno anterior</button>
+                    <button type="button" id="tabletop-init-next" class="primary">Pr&oacute;ximo turno</button>
+                  </div>
+                </div>
+                <div class="tabletop-token-editor-grid">
+                  <label>
+                    Rodada
+                    <input id="tabletop-init-round" type="number" min="1" step="1" value="1">
+                  </label>
+                  <div class="tabletop-inline-actions-block">
+                    <span>Ordem</span>
+                    <div class="tabletop-import-actions inline-actions">
+                      <button type="button" id="tabletop-init-sort" class="secondary">Ordenar iniciativa</button>
+                      <button type="button" id="tabletop-init-clear" class="secondary">Limpar</button>
+                    </div>
+                  </div>
+                </div>
+                <div id="tabletop-init-list" class="tabletop-init-list"></div>
+              </section>
+
+              <section class="tabletop-card tabletop-tools-card tabletop-master-only">
+                <div class="tabletop-card-header">
+                  <div>
+                    <h3>Ferramentas de Cena</h3>
+                    <p>Revele mapa aos poucos, fixe notas, desenhe &aacute;reas e organize objetos do cen&aacute;rio.</p>
+                  </div>
+                </div>
+                <label class="tabletop-toggle">
+                  <input id="tabletop-fog-enabled" type="checkbox">
+                  Ativar fog of war
+                </label>
+                <label>
+                  Tamanho do pincel do fog
+                  <input id="tabletop-fog-brush" type="range" min="48" max="360" step="8" value="160">
+                </label>
+                <p id="tabletop-fog-brush-output" class="hint">160 px de revela&ccedil;&atilde;o</p>
+                <div class="tabletop-import-actions inline-actions">
+                  <button type="button" id="tabletop-tool-fog-reveal" class="secondary">Revelar fog</button>
+                  <button type="button" id="tabletop-tool-fog-hide" class="secondary">Cobrir fog</button>
+                  <button type="button" id="tabletop-fog-clear" class="secondary">Limpar fog</button>
+                </div>
+                <div class="tabletop-import-actions inline-actions">
+                  <button type="button" id="tabletop-note-add" class="secondary">Nova nota</button>
+                  <button type="button" id="tabletop-area-add-circle" class="secondary">&Aacute;rea circular</button>
+                  <button type="button" id="tabletop-area-add-cone" class="secondary">Cone</button>
+                  <button type="button" id="tabletop-area-add-line" class="secondary">Linha</button>
+                  <button type="button" id="tabletop-ping-clear" class="secondary">Limpar pings</button>
+                </div>
+              </section>
+
+              <section class="tabletop-card tabletop-library-card tabletop-master-only">
+                <div class="tabletop-card-header">
+                  <div>
+                    <h3>Biblioteca e Presets</h3>
+                    <p>Guarde mapas, tokens e objetos para reutilizar r&aacute;pido, al&eacute;m de salvar cenas prontas.</p>
+                  </div>
+                  <div class="inline-actions">
+                    <button type="button" id="tabletop-library-upload" class="secondary">Enviar asset</button>
+                    <button type="button" id="tabletop-preset-save" class="primary">Salvar preset</button>
+                  </div>
+                </div>
+                <input id="tabletop-library-file" type="file" accept="image/*" class="hidden-file" multiple>
+                <div class="tabletop-token-editor-grid">
+                  <label>
+                    Tipo do asset
+                    <select id="tabletop-library-type">
+                      <option value="map">Mapa</option>
+                      <option value="token">Token</option>
+                      <option value="prop">Objeto</option>
+                    </select>
+                  </label>
+                  <label>
+                    Preset salvo
+                    <select id="tabletop-preset-select">
+                      <option value="">Escolha um preset</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="tabletop-import-actions inline-actions">
+                  <button type="button" id="tabletop-preset-apply" class="secondary">Aplicar preset</button>
+                  <button type="button" id="tabletop-preset-create-scene" class="secondary">Nova cena do preset</button>
+                  <button type="button" id="tabletop-preset-delete" class="menu-delete-btn">Excluir preset</button>
+                </div>
+                <div id="tabletop-library-list" class="tabletop-library-list"></div>
+              </section>
+
+              <section class="tabletop-card tabletop-tools-detail-card tabletop-master-only">
+                <div class="tabletop-card-header">
+                  <div>
+                    <h3>Elementos da Cena</h3>
+                    <p>Revise o que j&aacute; foi colocado no mapa sem apertar a visualiza&ccedil;&atilde;o principal da mesa.</p>
+                  </div>
+                </div>
+                <div class="tabletop-tool-columns">
+                  <section class="tabletop-mini-panel">
+                    <strong>Notas ancoradas</strong>
+                    <div id="tabletop-pin-list" class="tabletop-generic-list"></div>
+                  </section>
+                  <section class="tabletop-mini-panel">
+                    <strong>&Aacute;reas de efeito</strong>
+                    <div id="tabletop-area-list" class="tabletop-generic-list"></div>
+                  </section>
+                  <section class="tabletop-mini-panel">
+                    <strong>Objetos em camadas</strong>
+                    <div id="tabletop-prop-list" class="tabletop-generic-list"></div>
+                  </section>
+                </div>
+              </section>
+            </aside>
+
+            <section class="tabletop-stage-card">
+              <div class="tabletop-stage-toolbar">
+                <div>
+                  <h3 id="tabletop-stage-title">Cena t&aacute;tica</h3>
+                  <p id="tabletop-stage-meta" class="hint">Arraste os tokens pelo mapa para posicionar a mesa.</p>
+                  <p id="tabletop-stage-turn" class="hint tabletop-stage-turn">Nenhuma iniciativa ativa.</p>
+                </div>
+                <div class="tabletop-stage-toolbar-actions">
+                  <div class="inline-actions tabletop-stage-tools">
+                    <button type="button" id="tabletop-tool-measure" class="secondary">Medir</button>
+                    <button type="button" id="tabletop-tool-grid" class="secondary">Grade</button>
+                    <button type="button" id="tabletop-tool-ping" class="secondary">Ping</button>
+                  </div>
+                  <div class="inline-actions">
+                    <button type="button" id="tabletop-zoom-out" class="secondary">-</button>
+                    <button type="button" id="tabletop-zoom-reset" class="secondary">100%</button>
+                    <button type="button" id="tabletop-zoom-in" class="secondary">+</button>
+                  </div>
+                </div>
+              </div>
+              <div id="tabletop-stage-frame" class="tabletop-stage-frame">
+                <div id="tabletop-stage" class="tabletop-stage" tabindex="0" aria-label="Mesa t&aacute;tica">
+                  <div id="tabletop-map-layer" class="tabletop-map-layer" aria-hidden="true"></div>
+                  <div id="tabletop-props-layer" class="tabletop-props-layer" aria-hidden="true"></div>
+                  <div id="tabletop-grid" class="tabletop-grid" aria-hidden="true"></div>
+                  <div id="tabletop-areas-layer" class="tabletop-areas-layer" aria-hidden="true"></div>
+                  <div id="tabletop-tokens-layer" class="tabletop-tokens-layer"></div>
+                  <div id="tabletop-notes-layer" class="tabletop-notes-layer"></div>
+                  <div id="tabletop-fog-layer" class="tabletop-fog-layer" aria-hidden="true"></div>
+                  <div id="tabletop-pings-layer" class="tabletop-pings-layer" aria-hidden="true"></div>
+                  <div id="tabletop-ruler-layer" class="tabletop-ruler-layer" aria-hidden="true"></div>
+                  <div id="tabletop-stage-empty" class="tabletop-stage-empty">
+                    <strong>Mapa pronto para a sess&atilde;o.</strong>
+                    <p>Envie uma imagem, crie tokens e arraste tudo pela mesa.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="tabletop-stage-footer tabletop-master-only">
+                <p id="tabletop-stage-notes" class="hint">As notas da cena aparecem aqui para consulta r&aacute;pida do mestre.</p>
+              </div>
+            </section>
+          </div>
+
+          <button type="button" id="tabletop-master-phone-dock" class="tabletop-master-phone-dock tabletop-master-only hidden" aria-label="Abrir celular do mestre" aria-expanded="false" aria-controls="tabletop-master-phone">
+            <span class="tabletop-master-phone-outline" aria-hidden="true">
+              <span class="tabletop-master-phone-speaker"></span>
+              <span class="tabletop-master-phone-home-dot"></span>
+            </span>
+          </button>
+
+          <section id="tabletop-master-phone" class="tabletop-master-phone tabletop-master-only hidden" data-phone-screen="home" aria-label="Celular do mestre" aria-hidden="true">
+            <div class="tabletop-master-phone-shell">
+              <div class="tabletop-master-phone-topbar">
+                <span class="tabletop-master-phone-signal">NEMESIS</span>
+                <strong id="tabletop-master-phone-clock">00:00</strong>
+                <button type="button" id="tabletop-master-phone-close" class="secondary">Fechar</button>
+              </div>
+
+              <section id="tabletop-master-phone-home" class="tabletop-master-phone-screen">
+                <div class="tabletop-master-phone-app-grid">
+                  <button type="button" class="tabletop-master-phone-app is-primary" data-phone-screen-target="session">
+                    <span class="tabletop-master-phone-app-icon">SS</span>
+                    <span class="tabletop-master-phone-app-label">Sess&atilde;o</span>
+                    <span class="tabletop-master-phone-app-meta">Mesa e c&oacute;digo</span>
+                  </button>
+                  <button type="button" class="tabletop-master-phone-app" data-phone-screen-target="timer">
+                    <span class="tabletop-master-phone-app-icon">TM</span>
+                    <span class="tabletop-master-phone-app-label">Rel&oacute;gio</span>
+                    <span class="tabletop-master-phone-app-meta">Dura&ccedil;&atilde;o da mesa</span>
+                  </button>
+                  <button type="button" class="tabletop-master-phone-app" data-phone-screen-target="sound">
+                    <span class="tabletop-master-phone-app-icon">FX</span>
+                    <span class="tabletop-master-phone-app-label">Sons</span>
+                    <span class="tabletop-master-phone-app-meta">Presets e uploads</span>
+                  </button>
+                  <button type="button" class="tabletop-master-phone-app" data-phone-screen-target="gallery">
+                    <span class="tabletop-master-phone-app-icon">GL</span>
+                    <span class="tabletop-master-phone-app-label">Galeria</span>
+                    <span class="tabletop-master-phone-app-meta">Imagens guardadas</span>
+                  </button>
+                  <button type="button" class="tabletop-master-phone-app" data-phone-screen-target="inventory">
+                    <span class="tabletop-master-phone-app-icon">IT</span>
+                    <span class="tabletop-master-phone-app-label">Itens</span>
+                    <span class="tabletop-master-phone-app-meta">Resumo do arsenal</span>
+                  </button>
+                  <button type="button" class="tabletop-master-phone-app" data-phone-screen-target="npcs">
+                    <span class="tabletop-master-phone-app-icon">NP</span>
+                    <span class="tabletop-master-phone-app-label">NPCs</span>
+                    <span class="tabletop-master-phone-app-meta">Arquivo r&aacute;pido</span>
+                  </button>
+                </div>
+              </section>
+
+              <section id="tabletop-master-phone-session-screen" class="tabletop-master-phone-screen hidden">
+                <div class="tabletop-master-phone-screen-head">
+                  <button type="button" class="secondary" data-phone-screen-target="home">Voltar</button>
+                  <strong>Sess&atilde;o</strong>
+                </div>
+                <p id="tabletop-master-session-meta" class="hint">Abra uma miss&atilde;o criada pelo mestre para sincronizar a mesa entre dispositivos.</p>
+                <label>
+                  Miss&atilde;o do mestre
+                  <select id="tabletop-master-session-select">
+                    <option value="">Escolha uma miss&atilde;o</option>
+                  </select>
+                </label>
+                <div class="tabletop-master-phone-actions">
+                  <button type="button" id="tabletop-master-session-open" class="primary">Abrir sess&atilde;o</button>
+                  <button type="button" id="tabletop-master-session-copy" class="secondary">Copiar c&oacute;digo</button>
+                  <button type="button" id="tabletop-master-session-close" class="secondary">Fechar sess&atilde;o</button>
+                </div>
+                <label>
+                  T&iacute;tulo da nova sess&atilde;o
+                  <input id="tabletop-master-session-title" type="text" maxlength="80" placeholder="Ex.: Hospital Santa Dhalia">
+                </label>
+                <label>
+                  Introdu&ccedil;&atilde;o
+                  <textarea id="tabletop-master-session-intro" rows="4" placeholder="Resumo curto do clima, gancho e objetivo da sess&atilde;o..."></textarea>
+                </label>
+                <button type="button" id="tabletop-master-session-create" class="primary">Criar nova sess&atilde;o</button>
+              </section>
+
+              <section id="tabletop-master-phone-timer-screen" class="tabletop-master-phone-screen hidden">
+                <div class="tabletop-master-phone-screen-head">
+                  <button type="button" class="secondary" data-phone-screen-target="home">Voltar</button>
+                  <strong>Rel&oacute;gio da sess&atilde;o</strong>
+                </div>
+                <div class="tabletop-master-phone-timer-display">
+                  <span>Dura&ccedil;&atilde;o</span>
+                  <strong id="tabletop-master-session-timer">00:00:00</strong>
+                </div>
+                <div class="tabletop-master-phone-actions">
+                  <button type="button" id="tabletop-master-session-timer-start" class="primary">Iniciar</button>
+                  <button type="button" id="tabletop-master-session-timer-pause" class="secondary">Pausar</button>
+                  <button type="button" id="tabletop-master-session-timer-reset" class="secondary">Resetar</button>
+                </div>
+              </section>
+
+              <section id="tabletop-master-phone-sound-screen" class="tabletop-master-phone-screen hidden">
+                <div class="tabletop-master-phone-screen-head">
+                  <button type="button" class="secondary" data-phone-screen-target="home">Voltar</button>
+                  <strong>Efeitos sonoros</strong>
+                </div>
+                <p id="tabletop-master-sound-meta" class="hint">Dispare um efeito sincronizado para todos os jogadores conectados na sess&atilde;o atual.</p>
+                <div class="tabletop-master-phone-actions">
+                  <button type="button" id="tabletop-master-sound-upload" class="secondary">Adicionar som</button>
+                  <button type="button" id="tabletop-master-sound-play" class="primary">Tocar para todos</button>
+                </div>
+                <input id="tabletop-master-sound-file" type="file" accept="audio/*" class="hidden-file">
+                <select id="tabletop-master-sound-select" class="hidden">
+                  <option value="preset:alert">Alerta</option>
+                  <option value="preset:impact">Impacto</option>
+                  <option value="preset:horror">Suspense</option>
+                  <option value="preset:success">Confirma&ccedil;&atilde;o</option>
+                </select>
+                <div id="tabletop-master-sound-list" class="tabletop-master-phone-feed"></div>
+              </section>
+
+              <section id="tabletop-master-phone-gallery-screen" class="tabletop-master-phone-screen hidden">
+                <div class="tabletop-master-phone-screen-head">
+                  <button type="button" class="secondary" data-phone-screen-target="home">Voltar</button>
+                  <strong>Galeria</strong>
+                </div>
+                <p class="hint">Guarde imagens r&aacute;pidas do mestre e abra em tela cheia quando precisar.</p>
+                <div class="tabletop-master-phone-actions">
+                  <button type="button" id="tabletop-master-gallery-upload" class="primary">Adicionar imagem</button>
+                </div>
+                <input id="tabletop-master-gallery-file" type="file" accept="image/*" class="hidden-file" multiple>
+                <div id="tabletop-master-gallery-list" class="tabletop-master-phone-gallery-grid"></div>
+              </section>
+
+              <section id="tabletop-master-phone-inventory-screen" class="tabletop-master-phone-screen hidden">
+                <div class="tabletop-master-phone-screen-head">
+                  <button type="button" class="secondary" data-phone-screen-target="home">Voltar</button>
+                  <strong>Itens</strong>
+                </div>
+                <p class="hint">Resumo dos itens prontos do mestre, sem sair da tela atual.</p>
+                <div id="tabletop-master-inventory-list" class="tabletop-master-phone-feed"></div>
+              </section>
+
+              <section id="tabletop-master-phone-npcs-screen" class="tabletop-master-phone-screen hidden">
+                <div class="tabletop-master-phone-screen-head">
+                  <button type="button" class="secondary" data-phone-screen-target="home">Voltar</button>
+                  <strong>NPCs</strong>
+                </div>
+                <p class="hint">Consulta r&aacute;pida dos NPCs e inimigos guardados pelo mestre.</p>
+                <div id="tabletop-master-npc-list" class="tabletop-master-phone-feed"></div>
+              </section>
+
+            </div>
+          </section>
+
+          <section id="tabletop-image-viewer" class="tabletop-image-viewer hidden" aria-hidden="true">
+            <div class="tabletop-image-viewer-dialog">
+              <button type="button" id="tabletop-image-viewer-close" class="secondary tabletop-image-viewer-close" aria-label="Fechar imagem">X</button>
+              <img id="tabletop-image-viewer-image" src="" alt="Visualizacao ampliada">
+              <p id="tabletop-image-viewer-title" class="tabletop-image-viewer-title"></p>
+            </div>
+          </section>
+        </div>
+        <div id="menu-master-lock-view" class="menu-view hidden">
+          <div class="master-lock-card">
+            <label class="master-password-label">
+              <input id="master-password-input" type="password" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="Senha do mestre" aria-label="Senha do mestre">
+            </label>
+            <p id="master-password-feedback" class="master-password-feedback"></p>
+            <div class="master-lock-actions">
+              <button type="button" id="master-unlock-button" class="primary">Desbloquear</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="menu-master-view" class="menu-view hidden">
+          <div class="master-view-header">
+            <div>
+              <p class="master-lock-eyebrow">Nemesis</p>
+              <h2>ACESSO RESTRITO</h2>
+              <p>Acompanhe os registros compartilhados como um painel de observação. Com Firebase ativo, o monitoramento pode acompanhar outros dispositivos em tempo real.</p>
+            </div>
+            <div class="master-view-actions">
+              <span class="master-live-pill">Tempo real</span>
+              <button type="button" id="master-lock-button" class="menu-delete-btn">Bloquear</button>
+            </div>
+          </div>
+
+          <div class="master-dashboard">
+            <aside class="master-list-panel">
+              <label class="search-label mode-search-label">
+                Buscar registro
+                <input id="master-search" type="search" placeholder="Digite identifica&ccedil;&atilde;o, classe, trilha ou origem...">
+              </label>
+              <div id="master-characters-list" class="master-characters-list"></div>
+            </aside>
+
+            <section id="master-character-detail" class="master-detail-panel">
+              <div class="master-detail-empty">
+                <h3>Nenhum registro compartilhado</h3>
+                <p>Quando um jogador enviar o registro para o mestre, ele aparecerá aqui.</p>
+              </div>
+      </section>
+    </div>
+  </div>
+
+        <div id="menu-master-inventory-view" class="menu-view hidden">
+          <div class="master-view-header">
+            <div>
+              <p class="master-lock-eyebrow">Arsenal</p>
+              <h2>INVENT&Aacute;RIO DO MESTRE</h2>
+              <p>Monte um cat&aacute;logo de itens reutiliz&aacute;veis, entregue para qualquer ficha compartilhada e mantenha tudo sincronizado entre dispositivos.</p>
+            </div>
+            <div class="master-view-actions">
+              <button type="button" id="master-inventory-add" class="primary">Novo item</button>
+            </div>
+          </div>
+
+          <div class="master-inventory-dashboard">
+            <aside class="master-inventory-library-panel">
+              <div class="master-section-head">
+                <div>
+                  <h3>Itens prontos</h3>
+                  <p class="hint">Crie v&aacute;rios itens, escolha r&aacute;pido o que quer editar e exclua direto da biblioteca quando precisar.</p>
+                </div>
+              </div>
+              <div id="master-inventory-list" class="master-inventory-list"></div>
+            </aside>
+
+            <section class="master-inventory-editor-panel">
+              <div class="master-section-head">
+                <div>
+                  <h3 id="master-inventory-editor-title">Item pronto</h3>
+                  <p id="master-inventory-editor-status" class="hint">Monte um item base para reutilizar durante a sess&atilde;o.</p>
+                </div>
+                <div class="inline-actions">
+                  <button type="button" id="master-inventory-duplicate" class="secondary">Duplicar</button>
+                  <button type="button" id="master-inventory-delete" class="menu-delete-btn">Excluir</button>
+                </div>
+              </div>
+
+              <div class="master-inventory-preview-strip">
+                <img id="master-inventory-preview" class="master-inventory-preview" src="" alt="Preview do item do mestre">
+                <div class="master-inventory-preview-actions">
+                  <button type="button" id="master-inventory-image-pick" class="secondary">Imagem do item</button>
+                  <button type="button" id="master-inventory-image-clear" class="secondary">Remover imagem</button>
+                  <input id="master-inventory-image-file" type="file" accept="image/*" class="hidden-file">
+                </div>
+              </div>
+
+              <div class="master-inventory-form-grid">
+                <label class="master-inventory-form-span">
+                  Nome do item
+                  <input id="master-inventory-name" type="text" maxlength="60" placeholder="Ex.: Chave do necrot&eacute;rio">
+                </label>
+                <label class="master-inventory-form-span">
+                  Descri&ccedil;&atilde;o
+                  <textarea id="master-inventory-description" rows="3" placeholder="Resumo curto do uso, origem ou efeito do item..."></textarea>
+                </label>
+                <label>
+                  Tipo
+                  <select id="master-inventory-type"></select>
+                </label>
+                <label>
+                  Raridade
+                  <select id="master-inventory-rarity"></select>
+                </label>
+                <label>
+                  Status padr&atilde;o
+                  <select id="master-inventory-status"></select>
+                </label>
+                <label>
+                  Exibi&ccedil;&atilde;o da imagem
+                  <select id="master-inventory-image-fit">
+                    <option value="cover">Preencher</option>
+                    <option value="contain">Mostrar inteira</option>
+                  </select>
+                </label>
+                <label>
+                  Peso
+                  <input id="master-inventory-weight" type="number" min="0" max="999" step="1">
+                </label>
+                <label>
+                  Cargas atuais
+                  <input id="master-inventory-charges-current" type="number" min="0" max="999" step="1">
+                </label>
+                <label>
+                  Cargas m&aacute;ximas
+                  <input id="master-inventory-charges-max" type="number" min="0" max="999" step="1">
+                </label>
+                <label>
+                  Ataque vinculado
+                  <input id="master-inventory-linked-attack" type="text" maxlength="60" placeholder="Ex.: Rev&oacute;lver antigo">
+                </label>
+                <label>
+                  B&ocirc;nus de defesa
+                  <input id="master-inventory-defense-bonus" type="number" min="-99" max="99" step="1">
+                </label>
+                <label>
+                  B&ocirc;nus de ataque
+                  <input id="master-inventory-attack-bonus" type="number" min="-99" max="99" step="1">
+                </label>
+                <label>
+                  B&ocirc;nus de dano
+                  <input id="master-inventory-damage-bonus" type="number" min="-99" max="99" step="1">
+                </label>
+                <label>
+                  Penalidade de SAN
+                  <input id="master-inventory-san-penalty" type="number" min="0" max="99" step="1">
+                </label>
+                <label class="master-inventory-form-span">
+                  Nota r&aacute;pida
+                  <textarea id="master-inventory-note" rows="2" placeholder="Pista, efeito secund&aacute;rio, origem, pre&ccedil;o, requisito..."></textarea>
+                </label>
+              </div>
+
+              <div class="inline-actions">
+                <button type="button" id="master-inventory-save" class="primary">Salvar item</button>
+              </div>
+            </section>
+
+            <section class="master-inventory-targets-panel">
+              <div class="master-section-head">
+                <div>
+                  <h3>Fichas compartilhadas</h3>
+                  <p id="master-inventory-target-meta" class="hint">Entregue o item selecionado para qualquer ficha enviada ao mestre, mesmo em outro dispositivo.</p>
+                </div>
+                <div class="inline-actions">
+                  <button type="button" id="master-inventory-give-all" class="secondary">Entregar para todas</button>
+                </div>
+              </div>
+              <div id="master-inventory-target-list" class="master-inventory-target-list"></div>
+            </section>
+          </div>
+        </div>
+
+        <div id="menu-master-npc-view" class="menu-view hidden">
+          <section class="master-npc-panel archive-mode">
+            <div class="master-view-header">
+              <div>
+                <p class="master-lock-eyebrow">Mesa</p>
+                <h2>NPCs e Inimigos</h2>
+                <p>Arquivo completo de NPCs, inimigos e presenças anômalas. Abra um registro para editar na tela principal.</p>
+              </div>
+              <div class="master-view-actions">
+                <button type="button" id="menu-master-npc-create-inline" class="primary">Novo NPC</button>
+              </div>
+            </div>
+            <div id="menu-master-npc-archive-list" class="master-npc-list master-npc-archive-list"></div>
+          </section>
+        </div>
+      </section>
+      <div id="menu-countdown" class="menu-countdown" aria-label="Contagem até nove de novembro">000:00:00:00</div>
+    </div>
+  </div>
+
+  <main class="layout">
+    <section class="panel form-panel">
+      <div id="master-editor-bar" class="master-editor-bar hidden">
+        <div class="master-editor-copy">
+          <p class="master-editor-kicker">Modo Mestre</p>
+          <h2 id="master-editor-title">Registro do Mestre</h2>
+          <p id="master-editor-status" class="master-editor-status">Selecione um registro compartilhado para visualizar e editar.</p>
+        </div>
+
+        <div class="master-editor-controls">
+          <button type="button" id="master-prev-sheet" class="secondary">Anterior</button>
+          <select id="master-sheet-select" aria-label="Selecionar registro do mestre"></select>
+          <button type="button" id="master-next-sheet" class="secondary">Pr&oacute;xima</button>
+          <button type="button" id="master-exit" class="secondary">Sair modo mestre</button>
+        </div>
+      </div>
+
+      <section id="master-settings-panel" class="master-settings-panel hidden">
+        <details class="master-settings-toggle">
+          <summary>Configura&ccedil;&otilde;es da Mesa</summary>
+          <div class="master-settings-grid">
+            <article class="master-settings-card">
+              <h3>Firebase das Salas</h3>
+              <p class="hint">Essas configura&ccedil;&otilde;es ficam no modo mestre para n&atilde;o poluir a tela dos jogadores.</p>
+              <label>
+                Configura&ccedil;&atilde;o
+                <textarea id="firebase-config-json" rows="8" placeholder='{"apiKey":"...","authDomain":"...","databaseURL":"...","projectId":"...","appId":"..."}'></textarea>
+              </label>
+              <div class="inline-actions">
+                <button type="button" id="firebase-config-save" class="primary">Salvar Firebase</button>
+                <button type="button" id="firebase-config-clear" class="secondary">Limpar</button>
+              </div>
+          <p id="firebase-config-feedback" class="hint">Voc&ecirc; tamb&eacute;m pode manter o arquivo <code>firebase-config.js?v=20260811-1</code>.</p>
+            </article>
+            <article class="master-settings-card">
+              <h3>Evento de Novembro</h3>
+              <p class="hint">Controla o aumento de falhas do menu quando faltarem 30 dias para 9 de novembro. Com Firebase ativo, esse estado vale para todos.</p>
+              <label class="master-settings-inline">
+                <input id="menu-event-enabled" type="checkbox" checked>
+                Evento autom&aacute;tico ativo
+              </label>
+              <label class="master-settings-inline">
+                <input id="menu-event-force" type="checkbox">
+                For&ccedil;ar colapso agora
+              </label>
+              <label>
+                Frames extras do glitch
+                <textarea id="menu-event-frames" rows="6" placeholder="Uma frase por linha&#10;EX.: ELE CHEGOU&#10;EX.: ARQUIVO 09"></textarea>
+              </label>
+              <div class="inline-actions">
+                <button type="button" id="menu-event-save" class="primary">Salvar evento</button>
+                <button type="button" id="menu-event-reset" class="secondary">Restaurar padr&atilde;o</button>
+              </div>
+              <p id="menu-event-feedback" class="hint">O menu intensifica sozinho quando faltam 30 dias.</p>
+            </article>
+          </div>
+        </details>
+      </section>
+
+      <header class="panel-header">
+        <div class="panel-header-row">
+          <div>
+            <p class="eyebrow">Gerenciador de Personagens</p>
+          </div>
+          <div class="panel-header-actions panel-header-modes">
+            <span id="top-mode-indicator" class="top-mode-indicator hidden"></span>
+            <button type="button" id="in-action-toggle" class="mode-toggle mode-toggle-live" aria-pressed="false" aria-label="Ativar EM AÇÃO" title="Ativar EM AÇÃO">
+              <span class="mode-toggle-badge" aria-hidden="true">
+                <img src="icon-eye.png" alt="" class="ui-icon-img ui-icon-eye">
+              </span>
+              <span class="mode-toggle-label">Ação</span>
+            </button>
+            <button type="button" id="read-mode-toggle" class="mode-toggle mode-toggle-read" aria-pressed="false" aria-label="Entrar no modo leitura" title="Entrar no modo leitura">
+              <span class="mode-toggle-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="presentation">
+                  <path d="M4.5 6.5c2.4-1.2 4.8-1.4 7 0v11c-2.2-1.4-4.6-1.2-7 0z"></path>
+                  <path d="M12.5 6.5c2.2-1.4 4.6-1.2 7 0v11c-2.4-1.2-4.8-1.4-7 0z"></path>
+                  <path d="M12 6v12"></path>
+                </svg>
+              </span>
+              <span class="mode-toggle-label">Leitura</span>
+            </button>
+            <button type="button" id="sheet-edit-toggle" class="mode-toggle sheet-edit-toggle hidden" aria-pressed="false" aria-label="Editar ficha" title="Editar ficha">
+              <span class="mode-toggle-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="presentation">
+                  <path d="M4 20l4.5-1 9-9-3.5-3.5-9 9z"></path>
+                  <path d="M13.5 5.5l3.5 3.5"></path>
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <section id="tabletop-standalone-screen" class="tabletop-standalone-screen"></section>
+
+      <section id="master-npc-screen" class="master-npc-screen hidden">
+        <div class="master-npc-screen-shell">
+          <div class="master-npc-screen-topbar">
+            <div class="master-npc-screen-copy">
+              <p class="master-lock-eyebrow">Registro de Campo</p>
+              <h2 id="npc-screen-title">Criar NPC</h2>
+              <p id="npc-screen-status" class="hint">Monte um registro completo de presença, aliado, inimigo ou criatura.</p>
+            </div>
+
+            <div class="master-npc-screen-controls">
+              <button type="button" id="npc-sheet-prev" class="secondary">Anterior</button>
+              <select id="npc-sheet-select" aria-label="Selecionar NPC"></select>
+              <button type="button" id="npc-sheet-next" class="secondary">Próximo</button>
+              <button type="button" id="npc-sheet-create" class="secondary">Novo NPC</button>
+              <button type="button" id="npc-sheet-save" class="secondary">Salvar NPC</button>
+              <button type="button" id="npc-sheet-duplicate" class="secondary">Duplicar</button>
+              <button type="button" id="npc-sheet-toggle-combat" class="secondary">Modo combate</button>
+              <button type="button" id="npc-sheet-delete" class="menu-delete-btn">Excluir NPC</button>
+            </div>
+          </div>
+
+          <section id="master-npc-editor" class="master-npc-editor standalone"></section>
+        </div>
+      </section>
+
+      <form id="character-form">
+        <input type="hidden" id="character-id">
+        <input type="hidden" id="profile-image-data">
+        <input type="hidden" id="profile-image-fit" value="cover">
+        <input type="hidden" id="profile-image-position-x" value="50">
+        <input type="hidden" id="profile-image-position-y" value="50">
+        <input type="hidden" id="profile-image-zoom" value="1">
+        <input type="hidden" id="profile-frame-shape" value="square">
+        <input id="import-character-file" type="file" accept="application/json,.json" class="hidden-file">
+
+        <section class="hero-intro">
+          <div class="hero-avatar-column">
+            <button type="button" id="profile-image-open" class="avatar-circle" title="Abrir foto do personagem">
+              <img id="profile-preview-img" alt="Foto do personagem">
+              <span>Trocar foto</span>
+            </button>
+            <p id="hero-nex-display" class="hero-nex-display">NEX 0%</p>
+            <div id="profile-status-icons" class="profile-status-icons"></div>
+          </div>
+          <input id="profile-image-file" type="file" accept="image/*" class="hidden-file">
+
+          <div class="hero-text">
+            <p id="profile-record-line" class="hero-record-line">Arquivo // sinal disperso</p>
+            <h2 id="profile-name-display">Novo Personagem</h2>
+            <p id="profile-role-display">Classe e trilha</p>
+            <p id="profile-omen-line" class="hero-omen-line">Sem ruído registrado</p>
+          </div>
+        </section>
+
+        <section class="sheet-overview-grid">
+          <article class="sheet-overview-card">
+            <div class="section-toolbar">
+              <h3>Central de Status</h3>
+              <span id="sheet-status-badge" class="sheet-status-badge">Pronto</span>
+            </div>
+            <div id="sheet-status-list" class="sheet-status-list"></div>
+          </article>
+
+          <article class="sheet-overview-card">
+            <div class="section-toolbar">
+              <h3>Resumo da Sess&atilde;o</h3>
+            </div>
+            <div id="session-summary-content" class="session-summary-content"></div>
+          </article>
+
+          <article class="sheet-overview-card">
+            <div class="section-toolbar">
+              <h3>Hist&oacute;rico de Altera&ccedil;&otilde;es</h3>
+              <button type="button" id="clear-change-history" class="secondary compact-action">Limpar</button>
+            </div>
+            <div id="change-history-list" class="change-history-list"></div>
+          </article>
+        </section>
+
+        <section class="profile-section">
+          <h3>Perfil do Personagem</h3>
+          <div class="profile-grid">
+            <label>
+              Nome
+              <input id="name" type="text" required placeholder="Ex.: Kael Moura">
+            </label>
+            <label>
+              Data de nascimento
+              <input id="birthdate" type="date">
+              <span id="age-preview" class="field-hint">Idade: -</span>
+            </label>
+            <label>
+              Origem / profissão
+              <input id="origin" type="text" placeholder="Ex.: Paramédico, Mecânico, Investigador...">
+            </label>
+            <label>
+              Altura
+              <input id="character-height" type="text" inputmode="decimal" placeholder="Ex.: 1,75 m">
+            </label>
+            <label>
+              Peso
+              <input id="character-weight" type="text" inputmode="decimal" placeholder="Ex.: 70 kg">
+            </label>
+            <label>
+              Classe
+              <select id="class" required>
+                <option value="">Selecione</option>
+                <option value="Combatente">Combatente</option>
+                <option value="Especialista">Especialista</option>
+              </select>
+            </label>
+            <label>
+              Trilha
+              <select id="trail" required disabled>
+                <option value="">Selecione a classe primeiro</option>
+              </select>
+            </label>
+
+          </div>
+
+          <div id="profile-static-summary" class="profile-static-summary hidden"></div>
+
+          <textarea id="appearance" class="hidden-data" rows="1" aria-hidden="true"></textarea>
+          <textarea id="personality" class="hidden-data" rows="1" aria-hidden="true"></textarea>
+          <textarea id="internal-conflict" class="hidden-data" rows="1" aria-hidden="true"></textarea>
+          <textarea id="motivation" class="hidden-data" rows="1" aria-hidden="true"></textarea>
+
+          <p id="trail-description" class="trail-description">Selecione uma classe e trilha para ver a descrição.</p>
+        </section>
+
+        <section class="combat-layout">
+          <div class="resources-column">
+            <h3>Recursos</h3>
+
+            <div class="resources-bars">
+              <div class="status-track nex-track vertical-track">
+                <h4>NEX</h4>
+                <div class="track-row">
+                  <button type="button" class="track-adjust" data-track="nex" data-delta="-5">&lt;&lt; -5</button>
+                  <button type="button" class="track-adjust" data-track="nex" data-delta="5">+5 &gt;&gt;</button>
+                </div>
+                <div class="track-bar">
+                  <div id="nex-bar-fill" class="track-fill nex"></div>
+                  <p id="nex-bar-label" class="track-label inside">5%</p>
+                </div>
+                <input id="nex-max" type="hidden" value="100">
+                <input id="nex-lost" type="hidden" value="95">
+                <input id="nex" type="number" min="0" max="100" step="5" value="5" placeholder="5" class="nex-input">
+              </div>
+
+              <div class="resources-horizontal">
+                <div class="status-track pd-track">
+                  <h4>Pontos de Vida</h4>
+                  <div class="track-row">
+                    <button type="button" class="track-adjust" data-track="pd" data-delta="-5">&lt;&lt; -5</button>
+                    <button type="button" class="track-adjust" data-track="pd" data-delta="-1">&lt; -1</button>
+                    <button type="button" class="track-adjust" data-track="pd" data-delta="1">+1 &gt;</button>
+                    <button type="button" class="track-adjust" data-track="pd" data-delta="5">+5 &gt;&gt;</button>
+                  </div>
+                  <div class="track-bar">
+                    <div id="pd-bar-fill" class="track-fill pd"></div>
+                    <p id="pd-bar-label" class="track-label inside">Pontos de Vida 0 / 0</p>
+                  </div>
+                  <input id="pd-max" type="hidden" value="0">
+                  <input id="pd-lost" type="hidden" value="0">
+                </div>
+
+                <div class="status-track pe-track">
+                  <h4>Pontos de Esforço</h4>
+                  <div class="track-row">
+                    <button type="button" class="track-adjust" data-track="pe" data-delta="-5">&lt;&lt; -5</button>
+                    <button type="button" class="track-adjust" data-track="pe" data-delta="-1">&lt; -1</button>
+                    <button type="button" class="track-adjust" data-track="pe" data-delta="1">+1 &gt;</button>
+                    <button type="button" class="track-adjust" data-track="pe" data-delta="5">+5 &gt;&gt;</button>
+                  </div>
+                  <div class="track-bar">
+                    <div id="pe-bar-fill" class="track-fill pe"></div>
+                    <p id="pe-bar-label" class="track-label inside">Pontos de Esforço 0 / 0</p>
+                  </div>
+                  <input id="pe-max" type="hidden" value="0">
+                  <input id="pe-lost" type="hidden" value="0">
+                </div>
+
+                <div class="status-track san-track">
+                  <h4>Sanidade</h4>
+                  <div class="track-row">
+                    <button type="button" class="track-adjust" data-track="san" data-delta="-5">&lt;&lt; -5</button>
+                    <button type="button" class="track-adjust" data-track="san" data-delta="-1">&lt; -1</button>
+                    <button type="button" class="track-adjust" data-track="san" data-delta="1">+1 &gt;</button>
+                    <button type="button" class="track-adjust" data-track="san" data-delta="5">+5 &gt;&gt;</button>
+                  </div>
+                  <div class="track-bar">
+                    <div id="san-bar-fill" class="track-fill san"></div>
+                    <p id="san-bar-label" class="track-label inside">0 / 0</p>
+                  </div>
+                  <input id="san-max" type="hidden" value="0">
+                  <input id="san-lost" type="hidden" value="0">
+                </div>
+              </div>
+            </div>
+
+            <div class="resource-grid">
+              <label class="compact-field">
+                Defesa
+                <input id="defense" type="number" min="0" max="99" placeholder="10">
+              </label>
+              <label class="compact-field">
+                Deslocamento
+                <input id="movement" type="text" placeholder="Ex.: 9m">
+              </label>
+              <label class="wounds-field">
+                Ferimentos
+                <select id="wounds">
+                  <option value="">Sem ferimentos</option>
+                  <option value="Sangrando">Sangrando</option>
+                  <option value="Ferido">Ferido</option>
+                  <option value="Morrendo">Morrendo</option>
+                  <option value="Morto">Morto</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="resource-tools">
+              <button type="button" id="generate-derived-values" class="secondary">Gerar valores autom&aacute;ticos</button>
+              <p id="derived-summary" class="hint">Valores manuais. Gere uma sugest&atilde;o autom&aacute;tica quando quiser.</p>
+            </div>
+          </div>
+
+          <div class="attributes-column">
+            <h3>Atributos (clique para rolar)</h3>
+            <div id="attributes-grid" class="attributes-web"></div>
+          </div>
+
+          <div class="abilities-column">
+            <h3>Habilidades</h3>
+            <div class="abilities-toolbar">
+              <button type="button" id="add-ability" class="secondary">Adicionar habilidade</button>
+            </div>
+            <p class="hint">Cadastre habilidades e recursos especiais para usar durante a sessão.</p>
+            <div id="abilities-list" class="abilities-list"></div>
+          </div>
+
+          <div class="skills-wide">
+            <h3>Perícias (clique para rolar)</h3>
+            <div class="skills-toolbar">
+              <input id="skill-search" type="search" placeholder="Buscar perícia...">
+              <span id="skills-count">0 treinadas</span>
+            </div>
+            <p id="skills-hint" class="hint">Clique no nome para rolar e no nível para alternar entre Destreinado/Treinado/Veterano/Expert.</p>
+            <div id="skills-grid" class="skills-grid"></div>
+            <p class="skills-legend">
+              <span class="legend-destreinado">Destreinadas</span>
+              <span class="legend-treinado">Treinadas</span>
+              <span class="legend-veterano">Veterano</span>
+              <span class="legend-expert">Expert</span>
+            </p>
+          </div>
+        </section>
+
+        <section class="roll-section">
+          <h3>Rolagem</h3>
+          <div class="roll-controls">
+            <div class="roll-dice-picker">
+              <span class="roll-dice-label">Dados</span>
+              <div class="roll-dice-stepper" role="group" aria-label="Quantidade de dados da rolagem">
+                <button type="button" id="roll-dice-decrease" class="roll-dice-step" aria-label="Diminuir dados">-</button>
+                <output id="roll-dice-display" class="roll-dice-display" for="roll-dice-count">1 dado</output>
+                <button type="button" id="roll-dice-increase" class="roll-dice-step" aria-label="Aumentar dados">+</button>
+              </div>
+              <select id="roll-dice-count" class="roll-dice-native" aria-hidden="true" tabindex="-1">
+                <option value="1">1 dado</option>
+                <option value="2">2 dados</option>
+                <option value="3">3 dados</option>
+                <option value="4">4 dados</option>
+                <option value="5">5 dados</option>
+                <option value="6">6 dados</option>
+                <option value="7">7 dados</option>
+                <option value="8">8 dados</option>
+              </select>
+            </div>
+            <label class="roll-dice-picker roll-type-picker">
+              <span class="roll-dice-label">Tipo</span>
+              <select id="roll-die-type" class="roll-die-type-select">
+                <option value="20">D20</option>
+                <option value="12">D12</option>
+                <option value="10">D10</option>
+                <option value="8">D8</option>
+                <option value="6">D6</option>
+                <option value="4">D4</option>
+              </select>
+            </label>
+            <button type="button" id="roll-die-trigger" class="secondary roll-trigger-button">Rolar</button>
+          </div>
+          <p id="roll-result" class="roll-result">Clique em um atributo ou perícia para rolar d20 ou use o dado livre.</p>
+          <div class="roll-history-block">
+            <div class="section-toolbar">
+              <h4>Histórico de Rolagens</h4>
+              <button type="button" id="clear-roll-history" class="menu-delete-btn">Limpar</button>
+            </div>
+            <div id="roll-history-list" class="roll-history-list"></div>
+          </div>
+        </section>
+
+        <section class="combat-support-grid">
+          <article class="support-card attacks-card">
+            <div class="section-toolbar">
+              <div>
+                <h3>Arsenal e Ataques</h3>
+                <p class="hint">Cadastre ataques prontos, danos e custos para usar na mesa.</p>
+              </div>
+              <button type="button" id="add-attack" class="secondary">Adicionar ataque</button>
+            </div>
+            <div id="attacks-list" class="attacks-list"></div>
+          </article>
+
+          <article class="support-card initiative-card">
+            <div class="section-toolbar">
+              <div>
+                <h3>Iniciativa</h3>
+                <p class="hint">Organize turnos, destaque o atual e avance as rodadas.</p>
+              </div>
+              <div class="inline-actions">
+                <button type="button" id="initiative-add-self" class="secondary">Adicionar personagem</button>
+                <button type="button" id="initiative-add" class="secondary">Novo combatente</button>
+              </div>
+            </div>
+            <div class="initiative-toolbar">
+              <span id="initiative-round" class="initiative-round">Rodada 1</span>
+              <div class="inline-actions">
+                <button type="button" id="initiative-sort" class="secondary">Ordenar</button>
+                <button type="button" id="initiative-next" class="primary">Próximo turno</button>
+              </div>
+            </div>
+            <div id="initiative-list" class="initiative-list"></div>
+          </article>
+
+          <article class="support-card encounter-card">
+            <div class="section-toolbar">
+              <div>
+                <h3>Encontro Atual</h3>
+                <p class="hint">Separe a cena em andamento do restante da ficha e acompanhe quem está no confronto.</p>
+              </div>
+            </div>
+            <div class="encounter-editor">
+              <label>
+                Nome do encontro
+                <input id="encounter-title" type="text" placeholder="Ex.: Corredor da clínica, Hangar abandonado...">
+              </label>
+              <label class="encounter-full">
+                Resumo da cena
+                <textarea id="encounter-notes" rows="3" placeholder="Objetivo, risco, clima da cena, condição especial do ambiente..."></textarea>
+              </label>
+            </div>
+            <div id="encounter-summary" class="encounter-summary"></div>
+          </article>
+
+        </section>
+
+        <section class="inventory-section">
+          <button type="button" id="inventory-toggle" class="inventory-toggle" aria-expanded="false">
+            <span class="inventory-toggle-badge" aria-hidden="true">
+              <img src="icon-backpack.png" alt="" class="ui-icon-img ui-icon-backpack">
+            </span>
+            <span>Inventário</span>
+          </button>
+          <div id="inventory-panel" class="inventory-panel hidden">
+            <p id="inventory-hint" class="hint">Slots disponíveis: 7</p>
+            <div id="inventory-metrics" class="inventory-metrics"></div>
+            <div id="inventory-category-strip" class="inventory-category-strip"></div>
+            <div id="inventory-grid" class="inventory-grid"></div>
+          </div>
+        </section>
+
+        <textarea id="attacks" class="hidden-data" rows="1" aria-hidden="true"></textarea>
+        <textarea id="items" class="hidden-data" rows="1" aria-hidden="true"></textarea>
+        <textarea id="battle-notes" class="hidden-data" rows="1" aria-hidden="true"></textarea>
+
+        <div class="actions">
+          <button type="button" id="export-character-inline" class="secondary">Exportar JSON</button>
+          <button type="button" id="import-character-inline" class="secondary">Importar JSON</button>
+          <button type="button" id="share-master-current" class="secondary">Enviar ao Mestre</button>
+          <button type="submit" id="save-character" class="primary">Salvar personagem</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div id="roll-modal" class="roll-modal" aria-hidden="true">
+    <div id="roll-modal-card" class="roll-modal-card">
+      <button type="button" id="roll-close" class="roll-close">×</button>
+      <p id="roll-modal-title" class="roll-modal-title">Rolagem</p>
+      <div id="roll-skill-animation" class="roll-skill-animation" aria-hidden="true"></div>
+      <p id="roll-modal-result" class="roll-modal-result">Resultado: -</p>
+      <p id="roll-modal-dice" class="roll-modal-dice">D20: -</p>
+    </div>
+  </div>
+
+  <div id="profile-image-modal" class="profile-image-modal" aria-hidden="true">
+    <div class="profile-image-modal-card" role="dialog" aria-modal="true" aria-label="Imagem do personagem">
+      <button type="button" id="profile-image-close" class="profile-image-close" aria-label="Fechar imagem">×</button>
+      <div id="profile-image-viewer" class="profile-image-viewer">
+        <img id="profile-image-full-preview" alt="Imagem completa do personagem">
+        <button type="button" id="profile-image-edit-toggle" class="profile-image-edit-toggle">Editar imagem</button>
+      </div>
+      <section id="profile-image-tools" class="profile-image-tools hidden">
+        <div class="profile-image-tool-grid">
+          <label>
+            Posição horizontal
+            <input id="profile-image-position-x-control" type="range" min="0" max="100" step="1">
+          </label>
+          <label>
+            Posição vertical
+            <input id="profile-image-position-y-control" type="range" min="0" max="100" step="1">
+          </label>
+          <label>
+            Zoom
+            <input id="profile-image-zoom-control" type="range" min="1" max="2.6" step="0.05">
+          </label>
+        </div>
+        <div class="profile-frame-options" aria-label="Formato da borda do perfil">
+          <button type="button" data-profile-frame-shape="square">Quadrado</button>
+          <button type="button" data-profile-frame-shape="round">Redondo</button>
+          <button type="button" data-profile-frame-shape="hexagon">Hexágono</button>
+        </div>
+        <div class="profile-image-actions">
+          <button type="button" id="profile-image-replace" class="secondary">Trocar imagem</button>
+          <button type="button" id="profile-image-reset" class="secondary">Centralizar</button>
+        </div>
+        <p class="hint">Arraste a imagem na prévia ou use os controles para escolher o enquadramento do perfil.</p>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-database-compat.js"></script>
+  <script src="firebase-config.js?v=20260811-1"></script>
+  <script src="script.js?v=20260811-1"></script>
+  <script src="tabletop.js?v=20260811-1"></script>
+  <script>
+    (function () {
+      function stylesheetLoaded(hrefPart) {
+        try {
+          var sheets = document.styleSheets || [];
+          for (var i = 0; i < sheets.length; i++) {
+            var href = sheets[i] && sheets[i].href ? String(sheets[i].href) : "";
+            if (href.indexOf(hrefPart) !== -1) {
+              return true;
+            }
+          }
+        } catch (e) {
+          return true;
+        }
+        return false;
+      }
+
+      var closeBtn = document.getElementById("boot-warning-close");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+          var overlay = document.getElementById("boot-warning");
+          if (!overlay) return;
+          overlay.style.display = "none";
+          overlay.setAttribute("aria-hidden", "true");
+        });
+      }
+
+      window.setTimeout(function () {
+        var problems = [];
+    if (!stylesheetLoaded("styles.css?v=20260811-1")) {
+      problems.push("styles.css?v=20260811-1 n\u00E3o carregou.");
+        }
+        if (typeof window.NEMESIS_READY === "undefined") {
+      problems.push("script.js?v=20260811-1 n\u00E3o executou.");
+        }
+        if (window.NEMESIS_BOOT_ERROR) {
+          problems.push("Erro: " + window.NEMESIS_BOOT_ERROR);
+        }
+        if (problems.length > 0) {
+          var detailEl = document.getElementById("boot-warning-detail");
+          if (detailEl) {
+            detailEl.textContent = problems.join(" ");
+          }
+        }
+      }, 900);
+    })();
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

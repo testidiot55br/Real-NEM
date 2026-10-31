@@ -1,0 +1,27 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+
+    "masterShares": {
+      "$shareId": {
+        ".read": "auth != null && (data.child('ownerUid').val() === auth.uid || root.child('global/masters').child(auth.uid).val() === true)",
+        ".write": "auth != null && (newData.child('ownerUid').val() === auth.uid || root.child('global/masters').child(auth.uid).val() === true)",
+        ".validate": "newData.hasChildren(['shareId', 'ownerUid', 'snapshot']) && newData.child('shareId').isString() && newData.child('ownerUid').isString() && newData.child('snapshot').isObject()"
+      }
+    },
+
+    "global": {
+      "masters": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": false
+        }
+      },
+      "menuEventSettings": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('global/masters').child(auth.uid).val() === true"
+      }
+    }
+  }
+}
